@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class Route(str, Enum):
+class Route(StrEnum):
     DOCUMENTS = "documents"
     SQL = "sql"
 

@@ -63,7 +63,10 @@ class VectorRetriever:
             raise ValueError("query and document vector dimensions differ")
 
         hits = [
-            SearchHit(chunk, sum(left * right for left, right in zip(vector, query_vector)))
+            SearchHit(
+                chunk,
+                sum(left * right for left, right in zip(vector, query_vector, strict=True)),
+            )
             for chunk, vector in zip(self.chunks, self._vectors, strict=True)
         ]
         positive_hits = (hit for hit in hits if hit.score > 0)

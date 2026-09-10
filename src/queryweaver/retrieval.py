@@ -48,7 +48,9 @@ class LexicalRetriever:
         scored: list[SearchHit] = []
         for chunk, tokens in zip(self.chunks, self._tokens, strict=True):
             term_frequency = Counter(tokens)
-            score = sum(self._bm25(term, term_frequency[term], len(tokens)) for term in query_tokens)
+            score = sum(
+                self._bm25(term, term_frequency[term], len(tokens)) for term in query_tokens
+            )
             if score > 0:
                 scored.append(SearchHit(chunk, score))
         return sorted(scored, key=lambda hit: (-hit.score, hit.chunk.id))[:top_k]

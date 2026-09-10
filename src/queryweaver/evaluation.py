@@ -26,7 +26,11 @@ def retrieval_metrics(
         results = search(case.query, top_k)
         retrieved_ids = {hit.chunk.id for hit in results}
         first_relevant_rank = next(
-            (rank for rank, hit in enumerate(results, 1) if hit.chunk.id in case.relevant_chunk_ids),
+            (
+                rank
+                for rank, hit in enumerate(results, 1)
+                if hit.chunk.id in case.relevant_chunk_ids
+            ),
             None,
         )
         if first_relevant_rank is not None:

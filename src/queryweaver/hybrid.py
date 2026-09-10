@@ -31,7 +31,12 @@ def reciprocal_rank_fusion(
 
 class HybridRetriever:
     def __init__(
-        self, lexical: Retriever, vector: Retriever, *, candidate_multiplier: int = 4, rrf_k: int = 60
+        self,
+        lexical: Retriever,
+        vector: Retriever,
+        *,
+        candidate_multiplier: int = 4,
+        rrf_k: int = 60,
     ) -> None:
         if candidate_multiplier < 1:
             raise ValueError("candidate_multiplier must be positive")
