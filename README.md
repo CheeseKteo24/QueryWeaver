@@ -14,16 +14,20 @@ Most portfolio RAG projects stop at “upload a PDF and chat.” QueryWeaver foc
 - How do you trace latency, cost, failures, and model/tool decisions?
 - How do you build a system that works locally without hiding everything behind a framework?
 
-## Current milestone: M0 foundation
+## Current milestone: M1 hybrid retrieval
 
-The first vertical slice is intentionally dependency-light and API-key-free:
+The current vertical slice is intentionally dependency-light and API-key-free:
 
 - deterministic document chunking;
 - explainable BM25-style lexical retrieval;
+- Chinese character n-gram tokenization;
+- provider-agnostic vector retrieval with a deterministic hashing baseline;
+- reciprocal-rank fusion (RRF) hybrid retrieval;
 - heuristic document/SQL routing;
 - read-only SQLite guardrails;
 - citation-shaped results;
 - retrieval metrics (`hit_rate@k`, `MRR@k`);
+- a bilingual benchmark and CI quality gate;
 - unit tests and CI.
 
 Run the test suite with Python 3.11+:
@@ -62,7 +66,7 @@ flowchart LR
 ## Roadmap
 
 - [x] **M0 — Foundations:** framework-free core, safe SQL boundary, metrics, tests
-- [ ] **M1 — Real RAG:** Qdrant, dense embeddings, BM25 fusion, reranking
+- [ ] **M1 — Real RAG:** Chinese tokenizer and RRF baseline complete; real embeddings, Qdrant, and reranking next
 - [ ] **M2 — Data agent:** schema-aware Text-to-SQL, query repair, result visualization
 - [ ] **M3 — Agent workflow:** LangGraph routing, retries, human approval for risky actions
 - [ ] **M4 — Evaluation:** golden dataset, RAGAS-style metrics, regression gates

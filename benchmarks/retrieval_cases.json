@@ -1,0 +1,56 @@
+{
+  "chunks": [
+    {
+      "id": "refund-en",
+      "document_id": "customer-handbook",
+      "text": "Customers may request a refund within 30 days of purchase."
+    },
+    {
+      "id": "shipping-en",
+      "document_id": "customer-handbook",
+      "text": "International delivery normally takes between 7 and 10 business days."
+    },
+    {
+      "id": "leave-en",
+      "document_id": "employee-handbook",
+      "text": "Full-time employees receive 15 days of annual leave each calendar year."
+    },
+    {
+      "id": "security-en",
+      "document_id": "security-policy",
+      "text": "Production access requires multi-factor authentication and manager approval."
+    },
+    {
+      "id": "refund-zh",
+      "document_id": "客户手册",
+      "text": "客户可以在购买商品后的三十天内提交退款申请。"
+    },
+    {
+      "id": "shipping-zh",
+      "document_id": "客户手册",
+      "text": "国际订单通常需要七到十个工作日完成配送。"
+    },
+    {
+      "id": "leave-zh",
+      "document_id": "员工手册",
+      "text": "正式员工每个自然年享有十五天年假。"
+    },
+    {
+      "id": "security-zh",
+      "document_id": "安全制度",
+      "text": "访问生产环境必须启用多因素认证并获得主管批准。"
+    }
+  ],
+  "cases": [
+    {"query": "How long is the refund window?", "relevant_chunk_ids": ["refund-en"]},
+    {"query": "international delivery business days", "relevant_chunk_ids": ["shipping-en"]},
+    {"query": "How much annual leave do employees receive?", "relevant_chunk_ids": ["leave-en"]},
+    {"query": "requirements for production access", "relevant_chunk_ids": ["security-en"]},
+    {"query": "多久可以申请退款", "relevant_chunk_ids": ["refund-zh"]},
+    {"query": "国际订单配送需要几天", "relevant_chunk_ids": ["shipping-zh"]},
+    {"query": "正式员工有多少天年假", "relevant_chunk_ids": ["leave-zh"]},
+    {"query": "访问生产环境有什么要求", "relevant_chunk_ids": ["security-zh"]},
+    {"query": "What is the money-back deadline?", "relevant_chunk_ids": ["refund-en"]},
+    {"query": "What is the holiday allowance?", "relevant_chunk_ids": ["leave-en"]}
+  ]
+}

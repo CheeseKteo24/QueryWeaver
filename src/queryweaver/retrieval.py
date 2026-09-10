@@ -7,11 +7,23 @@ from collections.abc import Iterable
 
 from queryweaver.models import Chunk, SearchHit
 
-TOKEN_PATTERN = re.compile(r"[\w\u4e00-\u9fff]+", re.UNICODE)
+LATIN_TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9_]+")
+CJK_SEQUENCE_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]+")
 
 
 def tokenize(text: str) -> list[str]:
-    return [token.lower() for token in TOKEN_PATTERN.findall(text)]
+    """Tokenize Latin words and Chinese character n-grams without external models.
+
+    Chinese does not use spaces between words. Treating an entire sentence as one token
+    makes lexical matching nearly useless, so the baseline emits character unigrams and
+    bigrams. A learned tokenizer can replace this later without changing the retriever.
+    """
+    lowered = text.casefold()
+    tokens = LATIN_TOKEN_PATTERN.findall(lowered)
+    for sequence in CJK_SEQUENCE_PATTERN.findall(lowered):
+        tokens.extend(sequence)
+        tokens.extend(sequence[index : index + 2] for index in range(len(sequence) - 1))
+    return tokens
 
 
 class LexicalRetriever:
