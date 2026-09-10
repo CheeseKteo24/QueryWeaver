@@ -16,6 +16,10 @@ BM25-style retrieval is cheap, deterministic, and explainable. M1 will add dense
 
 Only one `SELECT` or read-only CTE is accepted. SQLite is switched to `query_only` mode before execution. M2 will add AST validation, row/time limits, schema allowlists, and query-plan inspection.
 
+## ADR-004: embeddings and vector storage are separate adapters
+
+Embedding generation and vector persistence change for different reasons. QueryWeaver therefore keeps `Embedder` independent from `QdrantRetriever`. Unit tests inject fakes, local development can use FastEmbed plus embedded Qdrant, and deployment can point the same boundary at a Qdrant service.
+
 ## Planned service boundaries
 
 - `web`: workspace UI, streaming chat, evidence inspector, experiment dashboard

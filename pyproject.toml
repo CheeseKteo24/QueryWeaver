@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "queryweaver"
-version = "0.2.0"
+version = "0.3.0"
 description = "A verifiable agentic copilot for documents and SQL data"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,6 +15,7 @@ dependencies = []
 [project.optional-dependencies]
 api = ["fastapi>=0.116,<1", "uvicorn[standard]>=0.35,<1"]
 dev = ["pytest>=8.4,<9", "ruff>=0.12,<1", "mypy>=1.17,<2"]
+retrieval = ["qdrant-client[fastembed]>=1.14.2,<2"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/queryweaver"]

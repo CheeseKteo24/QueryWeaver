@@ -14,8 +14,11 @@ class FakeSemanticEmbedder(Embedder):
         "quarterly revenue": [0.0, 1.0],
     }
 
-    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
         return [self.vocabulary.get(text.casefold(), [0.0, 0.0]) for text in texts]
+
+    def embed_query(self, text: str) -> list[float]:
+        return self.vocabulary.get(text.casefold(), [0.0, 0.0])
 
 
 class HybridRetrieverTests(unittest.TestCase):

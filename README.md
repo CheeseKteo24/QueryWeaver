@@ -22,6 +22,8 @@ The current vertical slice is intentionally dependency-light and API-key-free:
 - explainable BM25-style lexical retrieval;
 - Chinese character n-gram tokenization;
 - provider-agnostic vector retrieval with a deterministic hashing baseline;
+- query/passage-aware FastEmbed adapter for multilingual embeddings;
+- persistent or in-memory Qdrant vector index;
 - reciprocal-rank fusion (RRF) hybrid retrieval;
 - heuristic document/SQL routing;
 - read-only SQLite guardrails;
@@ -34,6 +36,19 @@ Run the test suite with Python 3.11+:
 
 ```bash
 python -m unittest discover -s tests -v
+```
+
+Run the offline baseline benchmark:
+
+```bash
+python scripts/run_retrieval_benchmark.py --assert-minimum 0.75
+```
+
+Run the opt-in semantic benchmark (downloads a public multilingual ONNX model once):
+
+```bash
+python -m pip install -e ".[retrieval]"
+python scripts/run_semantic_benchmark.py --assert-minimum 0.90
 ```
 
 Try the core locally:
@@ -66,7 +81,7 @@ flowchart LR
 ## Roadmap
 
 - [x] **M0 — Foundations:** framework-free core, safe SQL boundary, metrics, tests
-- [ ] **M1 — Real RAG:** Chinese tokenizer and RRF baseline complete; real embeddings, Qdrant, and reranking next
+- [ ] **M1 — Real RAG:** multilingual FastEmbed and Qdrant adapters complete; measured benchmark and reranking next
 - [ ] **M2 — Data agent:** schema-aware Text-to-SQL, query repair, result visualization
 - [ ] **M3 — Agent workflow:** LangGraph routing, retries, human approval for risky actions
 - [ ] **M4 — Evaluation:** golden dataset, RAGAS-style metrics, regression gates
