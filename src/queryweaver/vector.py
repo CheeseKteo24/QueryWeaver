@@ -81,7 +81,7 @@ class FastEmbedEmbedder:
         self._model = model
 
     @staticmethod
-    def _as_floats(vector: Iterable[object]) -> list[float]:
+    def _as_floats(vector: Iterable[Any]) -> list[float]:
         return [float(value) for value in vector]
 
     def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
