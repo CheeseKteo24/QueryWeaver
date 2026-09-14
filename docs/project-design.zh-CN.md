@@ -57,6 +57,8 @@ QueryWeaver 是一个面向企业私有数据的可验证智能问答系统。�
 
 ## 4. 总体架构
 
+> 本图同时包含当前核心和目标服务。各方框的完成状态、代码映射、实际组装方式与模型连接过程，参见 [Target Architecture：代码结构与模型连接指南](target-architecture-code-guide.zh-CN.md)。
+
 ```mermaid
 flowchart LR
     USER[用户] --> WEB[Next.js Workspace]
