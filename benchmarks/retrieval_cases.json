@@ -39,6 +39,46 @@
       "id": "security-zh",
       "document_id": "安全制度",
       "text": "访问生产环境必须启用多因素认证并获得主管批准。"
+    },
+    {
+      "id": "digital-refund-en",
+      "document_id": "subscription-policy",
+      "text": "Digital subscriptions can be cancelled for a full refund within 7 days."
+    },
+    {
+      "id": "domestic-shipping-en",
+      "document_id": "shipping-policy",
+      "text": "Domestic express delivery normally arrives within 2 business days."
+    },
+    {
+      "id": "contractor-leave-en",
+      "document_id": "contractor-handbook",
+      "text": "Independent contractors do not receive paid annual leave."
+    },
+    {
+      "id": "development-access-en",
+      "document_id": "security-policy",
+      "text": "Development environment access requires team lead approval but not MFA."
+    },
+    {
+      "id": "digital-refund-zh",
+      "document_id": "订阅退款制度",
+      "text": "数字订阅可在开通后的七天内取消并获得全额退款。"
+    },
+    {
+      "id": "domestic-shipping-zh",
+      "document_id": "配送制度",
+      "text": "国内加急订单通常在两个工作日内送达。"
+    },
+    {
+      "id": "contractor-leave-zh",
+      "document_id": "外包人员制度",
+      "text": "独立承包人员不享受带薪年假。"
+    },
+    {
+      "id": "development-access-zh",
+      "document_id": "安全制度",
+      "text": "开发环境访问需要团队负责人批准，但不强制多因素认证。"
     }
   ],
   "cases": [
@@ -51,6 +91,16 @@
     {"query": "正式员工有多少天年假", "relevant_chunk_ids": ["leave-zh"]},
     {"query": "访问生产环境有什么要求", "relevant_chunk_ids": ["security-zh"]},
     {"query": "What is the money-back deadline?", "relevant_chunk_ids": ["refund-en"]},
-    {"query": "What is the holiday allowance?", "relevant_chunk_ids": ["leave-en"]}
+    {"query": "What is the holiday allowance?", "relevant_chunk_ids": ["leave-en"]},
+    {"query": "digital subscription refund period", "relevant_chunk_ids": ["digital-refund-en"]},
+    {"query": "domestic express delivery time", "relevant_chunk_ids": ["domestic-shipping-en"]},
+    {"query": "Do contractors receive paid annual leave?", "relevant_chunk_ids": ["contractor-leave-en"]},
+    {"query": "development environment access approval", "relevant_chunk_ids": ["development-access-en"]},
+    {"query": "数字订阅几天内可以退款", "relevant_chunk_ids": ["digital-refund-zh"]},
+    {"query": "国内加急订单多久送达", "relevant_chunk_ids": ["domestic-shipping-zh"]},
+    {"query": "承包人员是否有带薪年假", "relevant_chunk_ids": ["contractor-leave-zh"]},
+    {"query": "开发环境需要谁批准", "relevant_chunk_ids": ["development-access-zh"]},
+    {"query": "When can I reverse a SaaS purchase?", "relevant_chunk_ids": ["digital-refund-en"]},
+    {"query": "临时合作人员的休假福利", "relevant_chunk_ids": ["contractor-leave-zh"]}
   ]
 }

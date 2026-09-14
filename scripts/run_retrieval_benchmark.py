@@ -8,9 +8,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from queryweaver.evaluation import retrieval_metrics  # noqa: E402
+from queryweaver.evaluation import measure_search_latency, retrieval_metrics  # noqa: E402
 from queryweaver.hybrid import HybridRetriever  # noqa: E402
 from queryweaver.models import Chunk, EvaluationCase  # noqa: E402
+from queryweaver.reranking import RerankingRetriever, TokenOverlapReranker  # noqa: E402
 from queryweaver.retrieval import LexicalRetriever  # noqa: E402
 from queryweaver.vector import HashingEmbedder, VectorRetriever  # noqa: E402
 
@@ -37,24 +38,35 @@ def main() -> int:
     chunks, cases = load_fixture(ROOT / "benchmarks" / "retrieval_cases.json")
     lexical = LexicalRetriever(chunks)
     vector = VectorRetriever(chunks, HashingEmbedder())
+    hybrid = HybridRetriever(lexical, vector)
     retrievers = {
         "lexical": lexical,
         "hashing-vector": vector,
-        "hybrid-rrf": HybridRetriever(lexical, vector),
+        "hybrid-rrf": hybrid,
+        "reranked-hybrid": RerankingRetriever(hybrid, TokenOverlapReranker()),
     }
 
     metric_name = f"hit_rate@{args.top_k}"
     results: dict[str, dict[str, float]] = {}
-    print(f"{'retriever':<18} {'hit_rate':>10} {'mrr':>10} {'recall':>10}")
+    print(
+        f"{'retriever':<18} {'hit_rate':>10} {'mrr':>10} {'recall':>10} "
+        f"{'p50_ms':>10} {'p95_ms':>10}"
+    )
     for name, retriever in retrievers.items():
         metrics = retrieval_metrics(
             cases, lambda query, top_k, r=retriever: r.search(query, top_k=top_k), top_k=args.top_k
         )
         results[name] = metrics
+        latency = measure_search_latency(
+            [case.query for case in cases],
+            lambda query, top_k, r=retriever: r.search(query, top_k=top_k),
+            top_k=args.top_k,
+        )
         print(
             f"{name:<18} {metrics[metric_name]:>10.3f} "
             f"{metrics[f'mrr@{args.top_k}']:>10.3f} "
-            f"{metrics[f'recall@{args.top_k}']:>10.3f}"
+            f"{metrics[f'recall@{args.top_k}']:>10.3f} "
+            f"{latency.p50_ms:>10.3f} {latency.p95_ms:>10.3f}"
         )
 
     if args.assert_minimum is not None and results["hybrid-rrf"][metric_name] < args.assert_minimum:

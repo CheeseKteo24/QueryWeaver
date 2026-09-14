@@ -14,7 +14,7 @@ Most portfolio RAG projects stop at “upload a PDF and chat.” QueryWeaver foc
 - How do you trace latency, cost, failures, and model/tool decisions?
 - How do you build a system that works locally without hiding everything behind a framework?
 
-## Current milestone: M1 hybrid retrieval
+## Current milestone: M2 safe Text-to-SQL
 
 The current vertical slice is intentionally dependency-light and API-key-free:
 
@@ -25,11 +25,15 @@ The current vertical slice is intentionally dependency-light and API-key-free:
 - query/passage-aware FastEmbed adapter for multilingual embeddings;
 - persistent or in-memory Qdrant vector index;
 - reciprocal-rank fusion (RRF) hybrid retrieval;
+- candidate-set reranking with deterministic and FastEmbed cross-encoder adapters;
 - heuristic document/SQL routing;
 - read-only SQLite guardrails;
 - citation-shaped results;
 - retrieval metrics (`hit_rate@k`, `MRR@k`);
 - a bilingual benchmark and CI quality gate;
+- p50/p95/max retrieval latency statistics;
+- SQLGlot AST validation, schema/function allowlists, row limits, and query timeouts;
+- a 17-case SQL safety regression benchmark;
 - unit tests and CI.
 
 Run the test suite with Python 3.11+:
@@ -49,6 +53,12 @@ Run the opt-in semantic benchmark (downloads a public multilingual ONNX model on
 ```bash
 python -m pip install -e ".[retrieval]"
 python scripts/run_semantic_benchmark.py --assert-minimum 0.90
+```
+
+Run the SQL safety benchmark:
+
+```bash
+python scripts/run_sql_policy_benchmark.py
 ```
 
 Try the core locally:
@@ -81,8 +91,8 @@ flowchart LR
 ## Roadmap
 
 - [x] **M0 — Foundations:** framework-free core, safe SQL boundary, metrics, tests
-- [ ] **M1 — Real RAG:** multilingual FastEmbed and Qdrant adapters complete; measured benchmark and reranking next
-- [ ] **M2 — Data agent:** schema-aware Text-to-SQL, query repair, result visualization
+- [ ] **M1 — Real RAG:** reranking and latency metrics complete; fixed-runner model report remains
+- [ ] **M2 — Data agent:** AST/schema/timeout safety core complete; model generator, repair, and result visualization next
 - [ ] **M3 — Agent workflow:** LangGraph routing, retries, human approval for risky actions
 - [ ] **M4 — Evaluation:** golden dataset, RAGAS-style metrics, regression gates
 - [ ] **M5 — Observability:** OpenTelemetry/Langfuse traces, token/cost/latency dashboard
@@ -100,7 +110,7 @@ docs/                  architecture, learning plan, and interview narrative
 
 ## Learning contract
 
-This repository is built in milestones. For every milestone, the author should be able to explain the design decision, implement one component without copying, write the tests, and record benchmark results. See [`docs/learning-roadmap.md`](docs/learning-roadmap.md).
+This repository is built in milestones. For every milestone, the author should be able to explain the design decision, implement one component without copying, write the tests, and record benchmark results. See [`docs/learning-roadmap.md`](docs/learning-roadmap.md) and the detailed [`Chinese project design`](docs/project-design.zh-CN.md).
 
 ## License
 

@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "queryweaver"
-version = "0.3.0"
+version = "0.4.0"
 description = "A verifiable agentic copilot for documents and SQL data"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "QueryWeaver contributors" }]
-dependencies = []
+dependencies = ["sqlglot>=29,<30"]
 
 [project.optional-dependencies]
 api = ["fastapi>=0.116,<1", "uvicorn[standard]>=0.35,<1"]

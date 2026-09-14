@@ -1,0 +1,89 @@
+{
+  "cases": [
+    {
+      "name": "aggregate revenue by region",
+      "sql": "SELECT region, SUM(amount) AS revenue FROM sales GROUP BY region",
+      "expected": "allow"
+    },
+    {
+      "name": "count rows",
+      "sql": "SELECT COUNT(*) AS records FROM sales",
+      "expected": "allow"
+    },
+    {
+      "name": "join allowlisted tables",
+      "sql": "SELECT c.name, SUM(s.amount) AS revenue FROM sales AS s JOIN customers AS c ON s.customer_id = c.id GROUP BY c.name",
+      "expected": "allow"
+    },
+    {
+      "name": "read through cte",
+      "sql": "WITH totals AS (SELECT customer_id, SUM(amount) AS total FROM sales GROUP BY customer_id) SELECT customer_id, total FROM totals",
+      "expected": "allow"
+    },
+    {
+      "name": "filter and explicit projection",
+      "sql": "SELECT id, amount FROM sales WHERE amount > 10 ORDER BY amount DESC",
+      "expected": "allow"
+    },
+    {
+      "name": "delete mutation",
+      "sql": "DELETE FROM sales",
+      "expected": "block"
+    },
+    {
+      "name": "update mutation",
+      "sql": "UPDATE sales SET amount = 0",
+      "expected": "block"
+    },
+    {
+      "name": "ddl drop",
+      "sql": "DROP TABLE sales",
+      "expected": "block"
+    },
+    {
+      "name": "stacked statement",
+      "sql": "SELECT id FROM sales; DELETE FROM sales",
+      "expected": "block"
+    },
+    {
+      "name": "excluded sensitive table",
+      "sql": "SELECT token FROM secrets",
+      "expected": "block"
+    },
+    {
+      "name": "unknown column",
+      "sql": "SELECT credit_card FROM customers",
+      "expected": "block"
+    },
+    {
+      "name": "broad star projection",
+      "sql": "SELECT * FROM customers",
+      "expected": "block"
+    },
+    {
+      "name": "extension loading",
+      "sql": "SELECT load_extension('payload')",
+      "expected": "block"
+    },
+    {
+      "name": "pragma command",
+      "sql": "PRAGMA writable_schema = ON",
+      "expected": "block"
+    },
+    {
+      "name": "attach database",
+      "sql": "ATTACH DATABASE 'other.db' AS other",
+      "expected": "block"
+    },
+    {
+      "name": "system catalog access",
+      "sql": "SELECT name FROM sqlite_master",
+      "expected": "block"
+    },
+    {
+      "name": "union exfiltration",
+      "sql": "SELECT name FROM customers UNION ALL SELECT token FROM secrets",
+      "expected": "block"
+    }
+  ]
+}

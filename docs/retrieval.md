@@ -22,12 +22,13 @@ A document that ranks well in multiple retrievers receives more evidence. The co
 
 ## 4. What the benchmark tells us
 
-The fixture contains direct keyword questions in English and Chinese plus English paraphrases with no token overlap. The expected baseline result is:
+The fixture contains 16 confusable English and Chinese chunks and 20 questions, including direct keyword queries, policy variants, identity variants, and paraphrases with little token overlap. One local baseline run produced:
 
 | Retriever | Hit rate@3 | MRR@3 | Recall@3 |
 |---|---:|---:|---:|
-| BM25-style lexical | 0.800 | 0.800 | 0.800 |
-| Hashing vector | 0.800 | 0.800 | 0.800 |
-| Hybrid RRF | 0.800 | 0.800 | 0.800 |
+| BM25-style lexical | 0.900 | 0.850 | 0.900 |
+| Hashing vector | 0.850 | 0.800 | 0.850 |
+| Hybrid RRF | 0.900 | 0.825 | 0.900 |
+| Hybrid + token reranker | 0.900 | 0.825 | 0.900 |
 
-The 0.200 gap is intentional. M1's real multilingual embedding adapter must close it without regressing the direct keyword cases or unacceptable latency.
+The token reranker validates candidate expansion and score replacement but does not improve semantic quality. A real cross-encoder must prove its value without reducing candidate recall or causing unacceptable p95 latency.

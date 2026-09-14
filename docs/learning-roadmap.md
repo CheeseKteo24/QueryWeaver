@@ -1,48 +1,427 @@
-# Learning roadmap
+# QueryWeaver 学习与实施路线图
 
-The goal is not merely to finish features. At each milestone, be ready to explain and reproduce the important part yourself.
+这份路线图不只是功能清单，而是一套“学习—实现—验证—表达”的训练计划。最终目标是：你不仅能运行项目，还能在面试中独立解释设计取舍、定位故障，并根据新需求继续演进。
 
-## M0 — Foundations (current)
+## 如何使用这份路线图
 
-Learn: chunking trade-offs, inverted indexes/BM25 intuition, retrieval metrics, SQL safety, test design.
+每个里程碑按以下闭环执行：
 
-Your exercises:
+1. **先测基线**：保存改动前的质量、延迟和失败案例。
+2. **一次只解决一个问题**：创建小 Issue 和小 PR，避免把多个概念混在一次提交中。
+3. **先写失败测试**：测试或 benchmark 能复现问题后，再写实现。
+4. **记录工程决策**：在 PR 中写清 Why、备选方案、取舍和结果。
+5. **用数据验收**：功能、质量、性能、安全至少选择一项量化指标。
+6. **复述与重写**：不看代码讲清核心原理，并独立重写一个最小版本。
 
-1. Explain why stable chunk IDs matter for citations and incremental indexing.
-2. Derive the IDF term used in `LexicalRetriever` with a small three-document example.
-3. Add one Chinese retrieval test and explain the tokenizer limitation you observe.
-4. Write five adversarial SQL strings and see which layer blocks each one.
+每个 M 阶段建议使用一个 GitHub Milestone，下面的子任务分别建 Issue。完成后打版本标签，并在 Release 中附 benchmark、架构变化和演示截图。
 
-Exit evidence: all tests pass; one short benchmark table is committed.
+---
 
-## M1 — Hybrid retrieval
+## M0 — 可测试的检索基础
 
-Learn: embeddings, cosine similarity, BM25, reciprocal-rank fusion, reranking, recall/latency trade-offs.
+**当前状态：已完成主要实现，适合用来补基础和做代码复述。**
 
-Build: Qdrant adapter, local embedding provider, fusion retriever, reranker, 30-case dataset.
+### 目标
 
-Exit evidence: compare lexical, dense, and hybrid results using hit-rate/MRR and p95 latency.
+建立一条完全可测试、可复现的最小 RAG 检索链路，理解后续所有优化到底改善了什么。
 
-## M2 — Text-to-SQL
+### 实施步骤
 
-Learn: schema linking, constrained generation, AST validation, query repair, execution feedback.
+#### M0.1 文档切分与稳定标识
 
-Build: schema catalog, read-only Postgres role, SQLGlot validation, result table/chart response.
+- 阅读 `chunking.py`，画出 Document → Chunk 的数据变化。
+- 用一篇中英文混合文档分别测试不同 `chunk_size` 和 `overlap`。
+- 验证同一输入重复切分时 chunk ID 不变，内容变化时对应 ID 改变。
+- 增加边界测试：空文档、超长段落、Unicode、重复段落。
 
-Exit evidence: 30 benchmark questions and a report covering execution accuracy and unsafe-query rejection.
+你需要掌握：为什么稳定 ID 对引用、增量索引、去重和缓存命中很重要；chunk 太大或太小分别怎样影响召回率和上下文噪声。
 
-## M3–M5 — Agent reliability
+#### M0.2 词法检索
 
-Learn: state machines, tool contracts, idempotency, retries, trace context, LLM-as-judge limitations.
+- 用 3 篇小文档手算一次 TF、IDF 和 BM25 分数，再与代码输出对照。
+- 为中文 unigram/bigram 分词器增加至少 3 个测试。
+- 收集同义改写无法召回的例子，形成 M1 的 dense retrieval 需求。
 
-Build: LangGraph orchestration, OpenTelemetry traces, golden datasets, regression gates, human review.
+#### M0.3 评测闭环
 
-Exit evidence: a failed trace can be diagnosed from the dashboard, and CI blocks a known quality regression.
+- 理解 Hit Rate、MRR、Recall@K 的含义及区别。
+- 故意制造“相关文档排在第 3 位”的案例，观察三个指标的变化。
+- 固定 benchmark 数据与参数，保证本地和 CI 可复现。
 
-## M6–M7 — Shipping and open source
+### 阶段验收
 
-Learn: streaming UX, auth/multi-tenancy, containers, deployment, documentation, maintainer workflow.
+- 所有单元测试通过，benchmark 能一条命令运行。
+- 你能在白板上写出 BM25 的核心公式，并解释各参数。
+- 至少提交 5 个边界/失败测试和一张基线指标表。
+- 能在 5 分钟内说明“切分策略为什么会改变检索质量”。
 
-Build: Next.js UI, Docker Compose, hosted demo, architecture diagram, demo video, good-first-issues.
+### 简历与面试证据
 
-Exit evidence: a stranger can run the project in under ten minutes and reproduce the benchmark.
+不要写“实现了 RAG”。应写成：构建可复现的文档切分与 BM25 检索基线，并以 Hit Rate、MRR、Recall@K 建立回归评测。
+
+---
+
+## M1 — 混合检索、候选集重排与性能测量
+
+**当前状态：检索、融合、Reranker 接口和 p50/p95 统计已具备；下一步要接入真实模型并扩大数据集。**
+
+### 目标
+
+解决纯关键词检索无法处理语义改写的问题，同时理解召回、精排、延迟和成本之间的权衡。
+
+### 实施步骤
+
+#### M1.1 Dense Retrieval
+
+- 先用 `HashingEmbedder` 理解向量接口和 cosine similarity，不把它当生产模型。
+- 接入 FastEmbed 的中英双语 embedding 模型，记录模型名、维度、许可证和内存占用。
+- 把向量写入 Qdrant，设计 collection、payload、metadata filter 和重建流程。
+- 对比内存向量检索和 Qdrant 的结果一致性。
+
+#### M1.2 Hybrid Retrieval
+
+- 分别运行 lexical、dense 两条检索链路，保存各自 top-k。
+- 使用 Reciprocal Rank Fusion 合并结果；手算一个两列表 RRF 示例。
+- 调整候选数、RRF 常数和 top-k，观察质量与延迟曲线。
+- 添加 metadata filter，验证 workspace、文档类型或时间范围不会串数据。
+
+#### M1.3 Candidate Reranker
+
+- 第一层使用 `TokenOverlapReranker` 做确定性测试，验证候选获取、排序和分数传递。
+- 第二层接入 `BAAI/bge-reranker-base` CrossEncoder，对 query-document pair 打分。
+- 只重排召回阶段的少量候选，例如先取 top-20、再返回 top-5。
+- 保存 rerank 前后的排名，专门分析“召回到了但排序错误”的样本。
+- 做消融实验：不重排、规则重排、CrossEncoder 重排。
+
+要特别理解：Reranker 不能找回候选集中不存在的文档；因此首先保证 Recall@candidate_k，再优化 MRR 和最终 top-k。CrossEncoder 更准确但更慢，不应扫描整个语料库。
+
+#### M1.4 延迟与更难数据集
+
+- 把数据集从当前 20 个问题扩充到至少 50 个，推荐最终达到 100 个。
+- 覆盖中文、英文、中英混合、同义改写、否定条件、时间条件和相似政策干扰项。
+- 每条样本保存：query、relevant chunk IDs、难度、类别、失败原因。
+- 预热后多次测量，报告 mean、p50、p95、max；固定机器和参数说明。
+- 按 query 类别切片评估，不能只看总平均值。
+
+### 阶段验收
+
+- 真实 embedding + Qdrant + CrossEncoder 可通过配置启用，测试环境仍可用轻量替身。
+- 数据集不少于 50 条，且至少 30% 是有干扰项的 hard cases。
+- 对 lexical、dense、hybrid、reranked-hybrid 给出统一表格：Hit Rate、MRR、Recall@K、p50、p95。
+- 能解释一个 hybrid 改善案例、一个 reranker 改善案例和一个仍然失败的案例。
+- CI 对关键质量阈值做回归检查。
+
+### 推荐学习任务
+
+关闭代码后，自己实现一个 30 行以内的 cosine top-k 和 RRF；然后回答：为什么 p95 比平均延迟更能反映用户遇到的卡顿？
+
+---
+
+## M2 — 安全 Text-to-SQL
+
+**当前状态：Schema Catalog、SQLGlot AST 策略、只读执行和安全 benchmark 已完成第一版；下一步是真实生成、修复与执行准确率。**
+
+### 目标
+
+把自然语言问题安全地转换为可执行 SQL，并从一开始就把越权、破坏性语句、超时和大结果集作为系统边界。
+
+### 实施步骤
+
+#### M2.1 Schema Catalog 与 Schema Linking
+
+- 从 SQLite/Postgres 读取表、列、类型、主外键和注释。
+- 生成紧凑的 schema context，避免把整个数据库定义塞给模型。
+- 为自然语言实体匹配候选表和列，并把匹配证据记录到 trace。
+- 增加相似表名、同名列、业务别名、不可见表等测试。
+
+#### M2.2 AST 安全策略
+
+- 使用 SQLGlot 解析 SQL AST，不使用正则表达式判断安全性。
+- 仅允许一条只读查询；校验物理表 allowlist、列、函数和 `SELECT *` 策略。
+- 正确区分 CTE 名和真实数据表。
+- 固定 SQL dialect；对解析失败采取 fail-closed。
+- 为注释绕过、大小写、子查询、CTE、UNION、未知函数和多语句构造攻击样本。
+
+#### M2.3 执行层纵深防御
+
+- 应用层之外使用数据库只读账号或 read-only transaction。
+- 注入外层行数上限，设置 statement timeout，并限制并发。
+- 将 SQL、耗时、返回行数、截断状态和错误类型写入结构化日志。
+- 脱敏敏感列；workspace/tenant 条件必须由系统注入，不能交给模型决定。
+
+#### M2.4 真实 SQL Generator
+
+- 定义结构化输出，只接受 SQL 和必要的解释字段。
+- Prompt 中提供 dialect、允许的 schema、少量高质量示例和安全约束。
+- 将模型供应商封装在 `SqlGenerator` 接口后，支持 mock 和替换。
+- 先在 30 个问题上测执行准确率，再调整 prompt；不要靠目测几个例子。
+
+#### M2.5 有限修复循环
+
+- 将解析错误、未知列和类型错误转成结构化、脱敏的反馈。
+- 最多允许 1–2 次修复，且每次生成后重新走完整安全校验。
+- 不把数据库原始敏感错误直接发回模型或前端。
+- 记录首轮成功率、修复后成功率以及修复引入的新失败。
+
+#### M2.6 结果解释与可视化
+
+- 返回列名、类型、行数据、截断标记、SQL 和可追溯信息。
+- 只在适合的结果上生成图表，例如时间序列或分类聚合；否则显示表格。
+- 自然语言总结必须基于实际执行结果，禁止模型补造数字。
+
+### 阶段验收
+
+- 至少 30 个正常问题和 30 个对抗 SQL/越权问题。
+- 报告 Exact Match（参考即可）、Execution Accuracy、Valid SQL Rate、Unsafe Rejection Rate 和 p95。
+- 对抗查询拒绝率 100%；生成 SQL 即使绕过应用校验，也受数据库只读权限限制。
+- 每个失败能归类为 schema linking、generation、validation、execution 或 answer rendering。
+- 能演示一条正常查询、一条自动修复和一条被拒绝的攻击请求。
+
+### 推荐学习任务
+
+为五条恶意 SQL 画出它们被哪一层阻断。面试时重点说明：解析器只负责理解语法树，安全策略和数据库权限才负责授权。
+
+---
+
+## M3 — Agent 路由与可靠工作流
+
+**建议在 M2 的确定性链路稳定后开始。**
+
+### 目标
+
+让系统能判断用户是在问文档、查数据库还是需要澄清，同时保证流程可观察、可恢复，而不是堆一个自由行动的 Agent。
+
+### 实施步骤
+
+#### M3.1 定义状态机
+
+- 设计显式状态：request、intent、retrieval evidence、SQL candidate、validation、result、error。
+- 画出路由图：classify → RAG/Text-to-SQL → verify → answer。
+- 为每个节点定义输入、输出、不变量和失败类型。
+
+#### M3.2 工具契约
+
+- 将 retrieve、generate_sql、validate_sql、execute_sql 定义为强类型工具。
+- 每个工具设置 timeout、错误码、幂等要求和可记录字段。
+- 禁止 Agent 绕过 validator 直接调用数据库。
+
+#### M3.3 可靠性机制
+
+- 只对临时错误重试，使用指数退避和最大次数。
+- 对写操作或高风险操作预留 human approval；当前项目默认仍只读。
+- 增加 checkpoint，使长流程在进程重启后可以恢复。
+- 为重复请求设计 request ID 和幂等缓存。
+
+#### M3.4 路由评测
+
+- 建立至少 60 条 intent 数据：文档问答、数据查询、混合问题、闲聊、歧义问题、越权问题。
+- 测路由准确率、澄清率、错误工具调用率和端到端成功率。
+- 重点加入“看起来像 SQL、实际应查文档”的困难样本。
+
+### 阶段验收
+
+- 每个节点都有单元测试，关键路径有集成测试。
+- 工具失败、超时、返回空结果时系统给出稳定且可解释的结果。
+- 路由错误不会导致安全边界失效。
+- 能从持久化 checkpoint 恢复至少一个中断流程。
+- 你能解释为什么这里使用显式工作流而不是完全自治 Agent。
+
+---
+
+## M4 — 可观测性、评测体系与质量门禁
+
+### 目标
+
+让一次错误回答可以被定位，让一次代码改动是否降低质量可以被自动判断。
+
+### 实施步骤
+
+#### M4.1 Trace 与指标
+
+- 使用 OpenTelemetry 为一次请求创建 trace。
+- 为 route、retrieve、rerank、generate、validate、execute、answer 建 span。
+- 记录模型、token、top-k、候选数、耗时、重试、错误类型；不记录原始敏感数据。
+- 建立 dashboard：请求量、成功率、p50/p95、模型成本、拒绝率。
+
+#### M4.2 Golden Dataset
+
+- 将检索、SQL、路由数据统一版本化，明确训练/调参集与最终测试集。
+- 为样本增加来源、难度、标签、预期证据和最后审核人。
+- 对线上失败做匿名化后加入 regression set。
+
+#### M4.3 自动评测
+
+- 优先使用确定性指标：文档 ID、SQL 执行结果、安全拒绝和引用完整性。
+- LLM-as-judge 只评价难以规则化的帮助性/忠实度，并保存 judge prompt 和模型版本。
+- 人工抽样校准 judge，报告它与人工标注的一致率。
+
+#### M4.4 CI 质量门禁
+
+- PR 执行单元测试、静态检查、轻量 benchmark。
+- 设定允许波动区间；质量明显下降或安全样本失败时阻断合并。
+- 完整模型 benchmark 可定时运行，避免每个 PR 都产生高成本。
+
+### 阶段验收
+
+- 给定失败请求 ID，10 分钟内能定位失败节点和输入输出摘要。
+- CI 能被一个故意引入的质量回归正确阻断。
+- Golden dataset 有版本、变更记录和数据泄漏说明。
+- LLM judge 的结论可以追溯，并经过人工样本校准。
+
+---
+
+## M5 — 生产安全、可靠性与多租户
+
+### 目标
+
+从“个人 Demo”升级为具备真实服务边界的系统。
+
+### 实施步骤
+
+#### M5.1 身份与租户隔离
+
+- 引入用户、workspace、role 三层模型。
+- 所有文档 chunk、向量和数据库连接都绑定 workspace ID。
+- 在服务端强制过滤，写跨租户读取的负向集成测试。
+
+#### M5.2 输入与内容安全
+
+- 限制文件类型、大小、解析时间和压缩包展开大小。
+- 将检索文档视为不可信数据，测试 prompt injection。
+- 对输出引用做来源校验，对敏感字段做脱敏。
+
+#### M5.3 稳定性保护
+
+- 增加 rate limit、并发上限、队列背压、超时和 circuit breaker。
+- 只缓存经过租户隔离的安全结果，设计 cache key 与失效策略。
+- 建立备份、恢复和文档删除全生命周期；删除要覆盖原文、chunk、向量和缓存。
+
+#### M5.4 故障演练
+
+- 模拟 Qdrant、模型 API、数据库不可用或变慢。
+- 验证降级提示、超时、重试不会形成雪崩。
+- 写简短 runbook：现象、查询指标、止损、恢复、复盘。
+
+### 阶段验收
+
+- 跨租户访问测试全部失败关闭（fail-closed）。
+- 日志、trace、错误信息中没有密钥和敏感数据。
+- 关键依赖故障时请求在规定时间内失败或降级，不会无限等待。
+- 可以证明一次删除请求清除了所有派生数据。
+- 完成至少 3 个故障场景及复盘记录。
+
+---
+
+## M6 — API、前端、容器化与部署
+
+### 目标
+
+提供面试官和陌生开发者可以真正使用的完整产品，而不只是脚本集合。
+
+### 实施步骤
+
+#### M6.1 后端 API
+
+- 使用 FastAPI 提供 ingest、chat/query、documents、health、metrics 接口。
+- 使用 Pydantic 定义请求和响应；生成并维护 OpenAPI 文档。
+- 用 SSE 流式输出阶段状态和最终答案，正确处理客户端断开。
+
+#### M6.2 前端体验
+
+- 使用 Next.js 实现登录、workspace、上传、对话和历史记录。
+- RAG 答案展示可点击引用；SQL 答案展示 SQL、表格、图表和截断提示。
+- 错误界面区分可重试、需澄清和权限拒绝。
+
+#### M6.3 容器与配置
+
+- 使用 Docker Compose 启动 API、前端、Qdrant 和数据库。
+- 配置通过环境变量注入，提供 `.env.example`，绝不提交密钥。
+- 增加 health/readiness、数据库 migration 和初始化示例数据。
+
+#### M6.4 部署与验证
+
+- 部署一个受限的公开 Demo，设置预算、速率和样例账号。
+- 自动化构建镜像、部署和 smoke test。
+- 做基础负载测试，记录目标并发下的成功率和 p95。
+- 演练一次版本回滚或服务恢复。
+
+### 阶段验收
+
+- 新开发者从 clone 到可用不超过 10 分钟。
+- Demo 可以完整演示上传文档、RAG 引用、Text-to-SQL 和安全拒绝。
+- OpenAPI、Docker Compose、`.env.example` 与实际行为一致。
+- 部署后 smoke test 自动通过，且有一份性能结果。
+
+---
+
+## M7 — 开源发布与求职表达
+
+### 目标
+
+把工程成果包装成可信、易验证、可维护的公开项目，并转化成简历和面试竞争力。
+
+### 实施步骤
+
+#### M7.1 仓库完善
+
+- README 首屏写清问题、核心能力、架构图、指标和 5 分钟启动方式。
+- 添加 LICENSE、CONTRIBUTING、SECURITY、Issue/PR 模板和行为准则。
+- 发布 `v1.0.0` Release，附迁移说明、已知限制和可复现 benchmark。
+- 创建 3–5 个边界明确的 `good first issue`，验证维护者工作流。
+
+#### M7.2 展示材料
+
+- 录制 2–3 分钟 Demo：问题 → 架构 → 正常链路 → 安全攻击 → 指标。
+- 写一篇技术文章，重点讲一个有数据的取舍，例如 RRF + reranker 的收益/延迟。
+- 保存架构图、trace 截图、benchmark 表和 CI badge。
+
+#### M7.3 简历与面试
+
+- 每条简历描述遵循“动作 + 难点 + 技术 + 量化结果”。
+- 准备 5 个 STAR 故事：性能优化、安全设计、质量回归、线上故障、技术取舍。
+- 能在 30 秒、2 分钟、10 分钟三个粒度介绍项目。
+- 为关键模块准备白板题：BM25/RRF、Reranker、AST 校验、幂等与 tracing。
+
+简历描述模板（指标达到后再填写真实数字）：
+
+> 设计并实现面向文档与结构化数据的 AI 查询系统 QueryWeaver，融合 BM25、向量检索、RRF 与 CrossEncoder 重排，在 X 条困难查询集上将 MRR 从 A 提升至 B，并将 p95 控制在 C ms。
+
+> 构建基于 SQLGlot AST、表列 allowlist、只读事务、行数与超时限制的 Text-to-SQL 纵深防御，在 X 条对抗样本上实现 100% 危险查询拦截，并以执行准确率和 CI 回归门禁持续验证。
+
+### 阶段验收
+
+- 陌生人仅依赖 README 可在 10 分钟内运行，并复现核心 benchmark。
+- GitHub Release、Demo 视频、设计文档、在线演示和指标互相一致。
+- 简历数字都有脚本、数据集或 trace 可追溯，绝不写无法证明的提升。
+- 你可以不看稿完成一次 10 分钟项目讲解和 15 分钟追问。
+
+---
+
+## 推荐执行顺序与时间盒
+
+不要同时展开所有阶段。以每周 8–12 小时为例：
+
+| 阶段 | 建议时间 | 当前最重要产出 |
+| --- | ---: | --- |
+| M0 | 1 周复盘 | 手算 BM25、补边界测试、讲清基线 |
+| M1 | 2–3 周 | 真实 embedding/CrossEncoder、50+ 困难检索集、对比报告 |
+| M2 | 3–4 周 | 真实生成器、修复循环、60+ SQL 安全与准确性样本 |
+| M3 | 2 周 | 显式状态机、工具契约、路由数据集 |
+| M4 | 2 周 | 完整 trace、golden dataset、CI 质量门禁 |
+| M5 | 2–3 周 | 多租户隔离、限流、故障演练 |
+| M6 | 3 周 | 可部署全栈 Demo、负载测试 |
+| M7 | 1–2 周 | v1.0、视频、文章、简历与面试材料 |
+
+## 每周复盘模板
+
+每周在 GitHub Discussion 或 `docs/progress/` 记录：
+
+1. 本周解决了哪个用户问题？
+2. 改动前后的指标分别是多少？
+3. 最困难的 bug 或设计取舍是什么？
+4. 哪个测试证明功能真的有效？
+5. 目前仍失败的样本是什么？
+6. 如果重做一次，会怎样改？
+7. 下周唯一最重要的交付物是什么？
+
+当你可以独立回答这些问题时，这个项目才真正转化成了你的能力，而不只是 GitHub 上的一组代码。
