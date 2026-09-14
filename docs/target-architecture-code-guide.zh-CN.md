@@ -1,6 +1,6 @@
 # Target Architecture：代码结构与模型连接指南
 
-版本：0.4.0  
+版本：0.5.0  
 目的：把架构图中的方框、运行时调用链、Python 文件和模型连接一一对应。
 
 ## 1. 先理解：Target Architecture 不是当前完成度截图
@@ -13,7 +13,7 @@ Target Architecture 描述项目最终希望达到的形态，其中只有一部
 | 已有接口 | 调用边界已定义，但真实模型或生产适配器尚未接入 |
 | 规划中 | 设计目标，当前仓库还没有对应服务 |
 
-当前最完整的是 Python 领域核心：文档切分、检索、重排、评测和 SQL 安全。FastAPI、Next.js、答案生成模型、Agent 状态机、OpenTelemetry 和生产数据库仍属于后续阶段。
+当前已经完成 Python 领域核心和本地纵向闭环：文档切分、检索、重排、评测、SQL 安全、统一 Application、FastAPI 与零构建浏览器 UI。真实答案生成模型、Next.js、Agent 状态机、OpenTelemetry 和生产数据库仍属于后续阶段。
 
 ## 2. 总体结构：三个平面、两条在线路径
 
@@ -88,10 +88,11 @@ flowchart TB
 | SQL Generator | `text_to_sql.py::SqlGenerator` | 问题、schema context | SQL 字符串 | 仅接口，真实 LLM 未接入 |
 | SQL Validator | `sql_policy.py::SqlPolicyValidator` | 模型 SQL | `ValidatedSql` | 已实现 |
 | SQL Executor | `sql_policy.py::execute_validated_sql` | 验证后的 SQL | 有界结果 | 已实现 SQLite 版 |
-| Query Orchestrator | 计划中的 `application.py` | 用户请求 | 统一响应 | 规划中 |
-| Answer Synthesizer | 计划中的 `generation.py` | 问题、证据 | 带引用答案 | 规划中 |
-| HTTP API | 计划中的 `api/` | HTTP/SSE | JSON/事件流 | 规划中 |
-| Web UI | 计划中的 `web/` | 用户交互 | Evidence/Trace UI | 规划中 |
+| Query Orchestrator | `application.py::QueryWeaverApplication` | 用户请求 | 统一响应 | 已实现 |
+| Answer Synthesizer | `application.py::AnswerSynthesizer` | 问题、证据 | 带引用答案 | 已有接口和确定性替身 |
+| Demo Composition | `demo.py::create_demo_application` | 本地内存数据 | 可运行应用对象 | 已实现 |
+| HTTP API | `api.py::create_api` | HTTP | JSON | 已实现本地版，SSE待实现 |
+| Web UI | `web/` | 用户交互 | Evidence/SQL UI | 已实现静态版，Next.js待实现 |
 
 这里最重要的区别是：**接口不等于模型已经连接**。例如 `SqlGenerator` 只规定模型连接器必须提供什么方法，真实云端或本地 LLM Adapter 仍需要在 M2 中实现。
 
@@ -265,7 +266,7 @@ class AnswerSynthesizer(Protocol):
 4. 检查 citation ID 必须来自实际候选；
 5. 没有足够证据时明确拒答。
 
-这一层尚未实现，所以当前项目可以验证检索质量，但还不能声称完成了端到端 RAG 问答。
+当前 `DeterministicSynthesizer` 会把真实 Chunk ID 和文本组织成可检查答案，用来验证端到端链路；真实生成模型 Adapter 尚未实现，因此不能把 Demo 的文本质量当作最终 RAG 效果。
 
 ## 8. Text-to-SQL：LLM 到底接在哪里
 
@@ -388,7 +389,7 @@ def create_application(settings: Settings) -> QueryWeaverApplication:
     )
 ```
 
-`create_application` 是下一阶段应该补的关键代码。它会让架构图第一次变成真正可运行的端到端对象图。
+当前 `demo.py::create_demo_application` 已承担本地 Composition Root：它装配 Hashing Embedding、Token Reranker、内存 SQLite 和确定性生成替身。生产版仍需增加类型化 Settings、真实 Provider Factory、生命周期管理和 Secret 注入。
 
 ## 11. 统一在线调用链
 
@@ -459,13 +460,13 @@ benchmarks/                 # 数据集与离线评测
 
 1. **真实检索模型实验**：真正运行 FastEmbed Embedding 和 CrossEncoder，产出质量/延迟报告。
 2. **SQL 模型 Adapter**：实现一个真实 `SqlGenerator`，增加结构化输出与有限修复。
-3. **答案合成接口**：实现带引用的 `AnswerSynthesizer`，校验引用 ID。
-4. **Composition Root**：增加 Settings、factory 和 `QueryWeaverApplication`，串通两条路径。
-5. **FastAPI**：只把统一应用服务暴露成 HTTP/SSE。
+3. **真实答案 Adapter**：替换确定性 Synthesizer，要求结构化引用并校验引用 ID。
+4. **生产 Composition Root**：增加 Settings、provider factory、资源关闭和 Secret 注入。
+5. **API 演进**：在现有 HTTP 闭环上增加 SSE、认证、workspace 和标准错误码。
 6. **Worker 与存储**：把摄取、Embedding 和 benchmark 从 API 进程移出。
-7. **Agent/Trace/UI**：在稳定调用链外增加状态机、OpenTelemetry 和展示层。
+7. **Agent/Trace/Next.js**：增加状态机、OpenTelemetry 和独立产品界面。
 
-在第 4 步完成之前，项目是“一组已经测试的核心能力”；第 4 步完成后，它才成为“端到端应用”。
+当前 v0.5 已是可测试的本地端到端应用；完成第 4–7 步后，才是具备真实模型、资源生命周期和服务边界的生产候选架构。
 
 ## 15. 你需要能回答的架构问题
 

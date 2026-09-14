@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="QueryWeaver document retrieval and safe Text-to-SQL demo"
+    />
+    <title>QueryWeaver · Verifiable Data Copilot</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <a class="brand" href="/" aria-label="QueryWeaver home">
+          <span class="brand-mark">QW</span>
+          <span>QueryWeaver</span>
+        </a>
+        <div class="status"><span class="status-dot"></span> Local demo</div>
+      </header>
+
+      <main>
+        <section class="hero">
+          <p class="eyebrow">VERIFIABLE DATA COPILOT</p>
+          <h1>Ask private data.<br /><span>Inspect every answer.</span></h1>
+          <p class="intro">
+            一个请求入口，两条受控路径：带引用的文档检索，以及经过 AST
+            策略验证的只读数据查询。
+          </p>
+        </section>
+
+        <section class="workspace" aria-label="Query workspace">
+          <div class="composer">
+            <label for="question">向 QueryWeaver 提问</label>
+            <textarea
+              id="question"
+              rows="3"
+              maxlength="2000"
+              placeholder="例如：数字订阅可以在多少天内退款？"
+            ></textarea>
+            <div class="composer-footer">
+              <div class="examples" aria-label="Example questions">
+                <button type="button" data-question="数字订阅可以在多少天内退款？">
+                  文档检索
+                </button>
+                <button type="button" data-question="按地区统计销售额">
+                  数据查询
+                </button>
+              </div>
+              <button id="submit" class="primary" type="button">
+                <span>运行查询</span><span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="error" class="error hidden" role="alert"></div>
+
+          <section id="result" class="result hidden" aria-live="polite">
+            <div class="result-head">
+              <div>
+                <p class="section-label">ANSWER</p>
+                <h2>可验证回答</h2>
+              </div>
+              <div class="badges">
+                <span id="route-badge" class="badge"></span>
+                <span id="latency-badge" class="badge secondary"></span>
+              </div>
+            </div>
+            <p id="answer" class="answer"></p>
+
+            <div id="sql-panel" class="panel hidden">
+              <div class="panel-title">
+                <h3>Validated SQL</h3>
+                <span>SQLGlot policy passed</span>
+              </div>
+              <pre><code id="sql"></code></pre>
+              <div class="table-wrap"><table id="sql-table"></table></div>
+            </div>
+
+            <div id="evidence-panel" class="panel hidden">
+              <div class="panel-title">
+                <h3>Evidence</h3>
+                <span>Retrieved source chunks</span>
+              </div>
+              <div id="evidence-list" class="evidence-list"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="flow" aria-label="Architecture overview">
+          <div><span>01</span><strong>Route</strong><small>Documents or SQL</small></div>
+          <i>→</i>
+          <div><span>02</span><strong>Retrieve / Validate</strong><small>Evidence first</small></div>
+          <i>→</i>
+          <div><span>03</span><strong>Respond</strong><small>Inspect the proof</small></div>
+        </section>
+      </main>
+
+      <footer>QueryWeaver v0.5 · deterministic local vertical slice</footer>
+    </div>
+  </body>
+</html>

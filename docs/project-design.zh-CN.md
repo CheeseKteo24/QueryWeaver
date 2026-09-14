@@ -1,7 +1,7 @@
 # QueryWeaver 项目详细设计文档
 
-版本：0.4.0  
-状态：M1 检索基础设施完成，M2 安全 Text-to-SQL 核心完成  
+版本：0.5.0  
+状态：M1 检索基础设施完成，M2 安全 Text-to-SQL 与本地纵向闭环完成  
 目标岗位：AI Engineer、LLM Application Engineer、后端/平台工程实习
 
 ## 1. 项目摘要
@@ -109,6 +109,10 @@ flowchart LR
 | `sql_policy.py` | AST/Schema/函数/执行策略 | 已完成 M2.1 |
 | `text_to_sql.py` | SQL 生成、验证、执行编排 | 已完成 Provider 边界 |
 | `router.py` | 文档与 SQL 工具路由 | 当前为可解释规则基线 |
+| `application.py` | 路由、两条数据路径、统一响应编排 | 已完成 |
+| `demo.py` | 无密钥本地 Composition Root | 已完成 |
+| `api.py` | FastAPI HTTP 契约与静态 UI 托管 | 已完成本地版 |
+| `web/` | Evidence 与 SQL Result 演示界面 | 已完成静态版 |
 
 ## 6. 文档摄取设计
 

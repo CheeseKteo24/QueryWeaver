@@ -4,6 +4,23 @@
 
 QueryWeaver is a portfolio-grade AI engineering project. It combines hybrid RAG, safe Text-to-SQL, agentic routing, offline evaluation, and production observability in one inspectable system. Every answer is designed to carry evidence, latency, and quality signals—not just fluent text.
 
+## What makes it different
+
+QueryWeaver is not a model API wrapper. Model providers are intentionally replaceable
+adapters; the project's value lives in the reliable system around them:
+
+- one question interface routes across unstructured documents and structured databases;
+- hybrid retrieval preserves exact-keyword and semantic recall before candidate reranking;
+- every document answer exposes source chunks instead of returning unsupported prose;
+- generated SQL is treated as untrusted input and must pass AST, schema, function,
+  read-only, row-limit, and timeout boundaries;
+- deterministic tests run without an API key, while real models plug into the same contracts;
+- quality, security, and tail latency are measured with versioned regression datasets.
+
+The product goal is to let an employee ask a business question without knowing whether
+the answer lives in a policy document or a relational table, while still giving engineers
+enough evidence to verify, reject, benchmark, and diagnose the result.
+
 ## Why this project exists
 
 Most portfolio RAG projects stop at “upload a PDF and chat.” QueryWeaver focuses on the engineering questions interviewers care about:
@@ -14,7 +31,7 @@ Most portfolio RAG projects stop at “upload a PDF and chat.” QueryWeaver foc
 - How do you trace latency, cost, failures, and model/tool decisions?
 - How do you build a system that works locally without hiding everything behind a framework?
 
-## Current milestone: M2 safe Text-to-SQL
+## Current milestone: M2 end-to-end vertical slice
 
 The current vertical slice is intentionally dependency-light and API-key-free:
 
@@ -34,7 +51,21 @@ The current vertical slice is intentionally dependency-light and API-key-free:
 - p50/p95/max retrieval latency statistics;
 - SQLGlot AST validation, schema/function allowlists, row limits, and query timeouts;
 - a 17-case SQL safety regression benchmark;
+- a unified application orchestration boundary;
+- a FastAPI query API and OpenAPI contract;
+- a zero-key browser UI for document citations and SQL result tables;
 - unit tests and CI.
+
+Run the complete local demo:
+
+```bash
+python -m pip install -e ".[api,dev]"
+python -m uvicorn queryweaver.api:app --reload
+```
+
+Then open <http://127.0.0.1:8000/>. The demo intentionally uses deterministic,
+API-free substitutes so that the complete browser → API → retrieval/SQL → evidence
+loop is reproducible. See the [Chinese end-to-end testing guide](docs/local-end-to-end-testing.zh-CN.md).
 
 Run the test suite with Python 3.11+:
 
@@ -105,6 +136,7 @@ flowchart LR
 src/queryweaver/       framework-independent Python core
 tests/                 deterministic unit tests
 docs/                  architecture, learning plan, and interview narrative
+web/                   zero-build local vertical-slice UI
 .github/workflows/     CI quality gate
 ```
 
