@@ -67,6 +67,15 @@ Then open <http://127.0.0.1:8000/>. The demo intentionally uses deterministic,
 API-free substitutes so that the complete browser → API → retrieval/SQL → evidence
 loop is reproducible. See the [Chinese end-to-end testing guide](docs/local-end-to-end-testing.zh-CN.md).
 
+Run the same full-stack slice in Docker and load-test the real HTTP boundary:
+
+```bash
+docker compose up --build --detach
+python scripts/run_load_test.py --requests 500 --concurrency 20
+```
+
+See the [Chinese deployment and load-testing guide](docs/deployment-load-testing.zh-CN.md).
+
 Run the test suite with Python 3.11+:
 
 ```bash
