@@ -36,11 +36,6 @@ jobs:
           docker logs queryweaver-ci
           exit 1
       - name: Verify browser and query endpoints
-        run: |
-          curl --fail --silent http://127.0.0.1:8000/ | grep QueryWeaver
-          curl --fail --silent \
-            --header "Content-Type: application/json" \
-            --data '{"question":"按地区统计销售额","top_k":3}' \
-            http://127.0.0.1:8000/v1/query | grep '"route":"sql"'
+        run: python scripts/run_smoke_test.py --base-url http://127.0.0.1:8000
       - if: always()
         run: docker rm --force queryweaver-ci || true
