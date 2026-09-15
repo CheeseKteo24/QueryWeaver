@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -93,7 +94,8 @@ def create_api(application: QueryWeaverApplication) -> FastAPI:
             latency_ms=response.latency_ms,
         )
 
-    web_root = Path(__file__).resolve().parents[2] / "web"
+    default_web_root = Path(__file__).resolve().parents[2] / "web"
+    web_root = Path(os.environ.get("QUERYWEAVER_WEB_ROOT", default_web_root))
     if web_root.is_dir():
         api.mount("/", StaticFiles(directory=web_root, html=True), name="web")
     return api
